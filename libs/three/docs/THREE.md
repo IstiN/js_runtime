@@ -33,4 +33,4 @@ Same input gives the same bytes; CI runs the `--verify` form against a fresh clo
 
 ## QuickJS compatibility
 
-three.js r186 needs no polyfills on QuickJS 2024-01-13: the minimal fixture (`new THREE.Scene()` plus one `Mesh(BoxGeometry(1, 1, 1))`) loads and runs in the bare engine (see `test/three/quickjs-minimal.test.js`). If a future pin uses a built-in that QuickJS lacks, add the smallest polyfill to `POLYFILLS` in `build.mjs` — the single patching place, never edit the generated bundle — and document here which missing built-in it covers.
+three.js r186 needs no polyfills on QuickJS 2024-01-13: the minimal fixture (`new THREE.Scene()` plus one `Mesh(BoxGeometry(1, 1, 1))`) loads and runs in the bare engine (see `test/three/quickjs-minimal.test.js`). A compatibility patch, when a future pin needs one, goes into `build.mjs` — never into the generated bundle.

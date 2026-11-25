@@ -1,7 +1,7 @@
 // math-parity.js — engine parity oracle for the vendored three.js bundle.
 // Runs AFTER the preload of libs/three/three.min.js in any engine:
 //   Chromium: via Playwright (test/three/parity.test.js)
-//   QuickJS:  build/host/qjs_harness --iid parity --preload libs/three/three.min.js --script test/three/math-parity.js
+//   QuickJS:  build/host/qjs_harness --iid parity --preload libs/three/three.min.js --script fixtures/three/math-parity.js
 // Computes the fixed parity set of js_runtime#4 (Matrix4 compose, decompose,
 // invert, multiply; Vector3 and Quaternion transforms; Euler conversions;
 // position checksums of BoxGeometry, SphereGeometry, TorusKnotGeometry;
@@ -74,4 +74,4 @@ function main() {
   console.log(JSON.stringify(canonical(results)));
 }
 
-if (typeof THREE !== 'undefined') main();
+main();

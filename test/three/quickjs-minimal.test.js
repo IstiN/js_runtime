@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { harnessAvailable, runQjs, BUNDLE } from './qjs-run.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE = path.join(HERE, 'fixtures/minimal.js');
+const FIXTURE = path.join(HERE, '../../fixtures/three/minimal.js');
 
 test('minimal Scene/Mesh fixture runs in bare QuickJS', (t) => {
   if (!harnessAvailable()) return t.skip('build/host/qjs_harness missing — run: bash tool/build_all.sh host');

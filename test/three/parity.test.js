@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { harnessAvailable, runQjs, BUNDLE } from './qjs-run.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const PARITY = path.join(HERE, 'math-parity.js');
+const PARITY = path.join(HERE, '../../fixtures/three/math-parity.js');
 const SCRIPT = readFileSync(PARITY, 'utf8');
 const PREFIX = 'console.log\t';
 

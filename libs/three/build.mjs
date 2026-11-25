@@ -9,7 +9,8 @@
 // bytes). Same input gives the same bytes. --verify rebuilds and exits 1
 // when the committed bundle or hash file differs from the clean rebuild.
 // The checkout is scratch (see docs/THREE.md); this script never edits the
-// generated bundle by hand — compatibility patches live in POLYFILLS below.
+// generated bundle by hand — a compatibility patch, when a future pin needs
+// one, goes here, never into the generated bundle.
 import { build } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -25,12 +26,6 @@ const sourceArg = args.indexOf('--source');
 const SOURCE = path.resolve(sourceArg >= 0 ? args[sourceArg + 1] : process.env.THREE_SRC || '/tmp/jsr-three-r186');
 const verify = args.includes('--verify');
 
-// Polyfills for built-ins that three.js r186 uses and QuickJS 2024-01-13
-// lacks. Kept to the smallest set proven necessary by running the minimal
-// fixture in build/host/qjs_harness; each entry covers one named missing
-// built-in and is documented in docs/THREE.md.
-const POLYFILLS = '';
-
 const result = await build({
   entryPoints: [path.join(SOURCE, 'src/Three.js')],
   bundle: true,
@@ -43,7 +38,6 @@ const result = await build({
   legalComments: 'none',
   sourcemap: false,
   define: { __THREE_DEVTOOLS__: 'undefined' },
-  banner: POLYFILLS ? { js: POLYFILLS } : undefined,
 });
 if (result.outputFiles.length !== 1) throw new Error('Unexpected esbuild outputs');
 const bytes = Buffer.from(result.outputFiles[0].contents);
