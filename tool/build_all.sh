@@ -69,7 +69,9 @@ for t in "${targets[@]}"; do
             archive "$BUILD_ROOT/host" host
             mkdir -p "$BUILD_ROOT/host"
             out="$BUILD_ROOT/host/qjs_harness"
-            "$CC" "${flags[@]}" -I"$QJS_DIR" "$HARNESS_C" "$BUILD_ROOT/host/libquickjs.a" -o "$out"
+            ldlibs=()
+            [ "$(uname -s)" = Linux ] && ldlibs=(-lm)
+            "$CC" "${flags[@]}" -I"$QJS_DIR" "$HARNESS_C" "$BUILD_ROOT/host/libquickjs.a" "${ldlibs[@]}" -o "$out"
             echo "OK host $out"
             ;;
         armeabi-v7a|arm64-v8a|x86_64)
