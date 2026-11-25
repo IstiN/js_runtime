@@ -32,10 +32,14 @@ const FIXTURES = [
   'audio.fixture.js',
 ];
 
+// console.time/timeEnd emit real elapsed milliseconds — nondeterministic by
+// nature. Normalize the number before comparing the two engine traces.
+const normalize = (line) => line.replace(/t: \d+ms/, 't: <ms>ms');
+
 function vmTrace(fixture) {
   const h = loadRuntime({ iid: 'engine1' });
   h.run(readFileSync(join(rootDir, 'fixtures', fixture), 'utf8'));
-  return h.trace().sort();
+  return h.trace().map(normalize).sort();
 }
 
 function qjsTrace(fixture) {
@@ -52,7 +56,7 @@ function qjsTrace(fixture) {
     ],
     { cwd: rootDir },
   );
-  return readFileSync(out, 'utf8').trim().split('\n').filter(Boolean).sort();
+  return readFileSync(out, 'utf8').trim().split('\n').filter(Boolean).map(normalize).sort();
 }
 
 test('the QuickJS engine reproduces the vm channel trace of every fixture', () => {
