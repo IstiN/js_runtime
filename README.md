@@ -30,10 +30,26 @@ Contract sibling: [js_widget_runtime](https://github.com/IstiN/js_widget_runtime
 - UI node schema / rendering — see js_widget_runtime.
 - Per-platform embedding glue — see the platform repos.
 
+## Engines
+
+The vendored QuickJS 2024-01-13 lives in `engines/quickjs/`; the adapter
+interface is `docs/ENGINE_ADAPTER.md`.
+
+```bash
+bash tool/build_all.sh host                 # build/host/libquickjs.a + build/host/qjs_harness
+bash tool/build_all.sh --ndk "$ANDROID_NDK_HOME" armeabi-v7a arm64-v8a x86_64
+                                            # build/<abi>/libquickjs.a per Android ABI
+```
+
+Android targets need an NDK (`$ANDROID_NDK_HOME` or `--ndk <dir>`; CI installs
+`ndk;27.2.12479018`). `npm test` builds the host backend itself when
+`build/host/qjs_harness` is missing.
+
 ## Docs
 
 - `docs/PROTOCOL.md` — messaging channel specification (extracted from the
   Flutter reference implementation).
+- `docs/ENGINE_ADAPTER.md` — the engine adapter interface.
 
 ## Running tests
 

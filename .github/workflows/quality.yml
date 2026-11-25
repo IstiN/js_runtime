@@ -11,6 +11,22 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Build host engine backend
+        run: bash tool/build_all.sh host
       - run: ./scripts/fetch-conformance.sh
       - run: npm ci
       - run: npm test
+
+  engines:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build host engine backend
+        run: bash tool/build_all.sh host
+      - run: node --test 'test/engine/**/*.test.js'
+      - name: Install NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018"
+      - name: Build Android ABIs
+        run: ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018" bash tool/build_all.sh armeabi-v7a arm64-v8a x86_64
