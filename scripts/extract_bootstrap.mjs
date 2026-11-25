@@ -2,9 +2,16 @@
 // extract_bootstrap.mjs — generates the two canonical bootstrap halves from
 // the pinned kJsWidgetBootstrap (contract of the whole JSR family):
 //   default                 write bootstrap-runtime.js (repository root)
-//   --emit-widget <path>    write the widget half to <path>
+//   --out <path>            write the runtime half to <path>
+//   --emit-widget <path>    write ONLY the widget half to <path>
 //   --check                 regenerate in memory, exit 1 on drift with the
-//                           committed bootstrap-runtime.js
+//                           committed runtime half
+//   --reference <path>      Dart file holding kJsWidgetBootstrap (default:
+//                           this repository's pinned file)
+//   --pin <sha>             sha printed in the provenance line (default:
+//                           sha of conformance.lock); with BOTH --reference
+//                           and --pin given, conformance.lock and
+//                           .conformance/ are never read
 // Split rule (plan 1.2): the runtime half is the explicit RUNTIME set —
 // the top-level statements listed in RUNTIME_STATEMENTS plus `var jsr`
 // filtered to RUNTIME_MEMBERS; everything else is the widget half in
@@ -17,7 +24,7 @@
 // generated file. Every override is listed with its reason in
 // docs/BOOTSTRAP.md.
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 
@@ -28,17 +35,18 @@ function lockSha() {
   return line.match(/@([0-9a-f]{40})/)[1];
 }
 
-function referenceJs() {
+function referenceJs(referencePath) {
   const dart = readFileSync(
-    join(
-      root,
-      '.conformance',
-      'flutter_js_widget_runtime',
-      'lib',
-      'src',
-      'runtime',
-      'js_widget_bootstrap.dart',
-    ),
+    referencePath ??
+      join(
+        root,
+        '.conformance',
+        'flutter_js_widget_runtime',
+        'lib',
+        'src',
+        'runtime',
+        'js_widget_bootstrap.dart',
+      ),
     'utf8',
   );
   const begin = dart.indexOf("= r'''") + "= r'''".length;
@@ -256,15 +264,15 @@ function applyOverrides(splitResult, overrides) {
 }
 
 
-function header(kind) {
-  return `// Generated from IstiN/flutter_js_widget_runtime@${lockSha()}:lib/src/runtime/js_widget_bootstrap.dart (${kind} half) by scripts/extract_bootstrap.mjs — do not edit.\n`;
+function header(kind, pin) {
+  return `// Generated from IstiN/flutter_js_widget_runtime@${pin}:lib/src/runtime/js_widget_bootstrap.dart (${kind} half) by scripts/extract_bootstrap.mjs — do not edit.\n`;
 }
 
-function assemble(kind, parts, jsrText, jsrAt) {
+function assemble(kind, parts, jsrText, jsrAt, pin) {
   // Re-insert the (filtered) jsr literal at its reference position. The
   // widget half (scratch output for the js_widget_runtime lane) carries no
   // provenance header: its first line is Object.assign(jsr, {.
-  const out = kind === 'widget' ? [] : [header(kind)];
+  const out = kind === 'widget' ? [] : [header(kind, pin)];
   let inserted = false;
   for (const p of parts) {
     if (!inserted && p.start > jsrAt) {
@@ -277,37 +285,85 @@ function assemble(kind, parts, jsrText, jsrAt) {
   return out.join('');
 }
 
-function generate() {
-  const src = referenceJs();
+function generate({ reference, pin } = {}) {
+  const src = referenceJs(reference);
+  const resolvedPin = pin ?? lockSha();
   const splitResult = split(src);
   applyOverrides(splitResult, loadOverrides());
   const jsr = literals(splitResult.props);
   return {
-    runtime: assemble('runtime', splitResult.runtime, jsr.runtimeJsr, splitResult.jsrPosition),
-    widget: assemble('widget', splitResult.widget, jsr.widgetJsr, splitResult.jsrPosition),
+    runtime: assemble('runtime', splitResult.runtime, jsr.runtimeJsr, splitResult.jsrPosition, resolvedPin),
+    widget: assemble('widget', splitResult.widget, jsr.widgetJsr, splitResult.jsrPosition, resolvedPin),
   };
 }
 
-const args = process.argv.slice(2);
-const emitWidgetIdx = args.indexOf('--emit-widget');
-const check = args.includes('--check');
-if (args.includes('--help') || emitWidgetIdx !== -1 && !args[emitWidgetIdx + 1]) {
-  console.error('usage: extract_bootstrap.mjs [--emit-widget <path>] [--check]');
-  process.exit(check ? 0 : 1);
-}
-const generated = generate();
-if (check) {
-  const committed = readFileSync(join(root, 'bootstrap-runtime.js'), 'utf8');
-  if (committed !== generated.runtime) {
-    console.error('bootstrap drift: committed bootstrap-runtime.js differs from the generated text (run scripts/extract_bootstrap.mjs)');
+const HELP = `usage: extract_bootstrap.mjs [options]
+
+Writes the runtime bootstrap half from the pinned kJsWidgetBootstrap.
+
+  (no options)                        write bootstrap-runtime.js (default out)
+  --out <path>                        write the runtime half to <path>
+  --emit-widget <path>                write ONLY the widget half to <path>
+  --check                             compare the committed runtime half with
+                                      the generated text; exit 1 on drift
+  --reference <path>                  Dart file holding kJsWidgetBootstrap
+                                      (default: this repository's pinned file)
+  --pin <sha>                         sha printed in the provenance line
+                                      (default: sha of conformance.lock)
+  --help                              this text
+
+With BOTH --reference and --pin given, neither conformance.lock nor
+.conformance/ is read, so a consumer repository can run the generator
+against its own pin. Runtime half write rule: with --emit-widget and no
+--out, only the widget half is written; the runtime half is written when
+--emit-widget is absent or --out is given.`;
+
+function parseArgs(argv) {
+  const opts = {};
+  const valueFlags = ['--out', '--emit-widget', '--reference', '--pin'];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--check' || a === '--help') {
+      opts[a.slice(2)] = true;
+      continue;
+    }
+    if (valueFlags.includes(a)) {
+      const value = argv[i + 1];
+      if (!value || value.startsWith('--')) {
+        console.error(`${a} needs a value\n`);
+        console.error(HELP);
+        process.exit(1);
+      }
+      opts[a.slice(2)] = value;
+      i++;
+      continue;
+    }
+    console.error(`unknown argument: ${a}\n`);
+    console.error(HELP);
     process.exit(1);
   }
-  console.log('bootstrap-runtime.js matches the generator output');
-} else {
-  writeFileSync(join(root, 'bootstrap-runtime.js'), generated.runtime);
-  console.log(`wrote bootstrap-runtime.js (${generated.runtime.length} bytes)`);
+  return opts;
 }
-if (emitWidgetIdx !== -1) {
-  writeFileSync(args[emitWidgetIdx + 1], generated.widget);
+
+const opts = parseArgs(process.argv.slice(2));
+if (opts.help) {
+  console.log(HELP);
+  process.exit(0);
+}
+const generated = generate(opts);
+const outPath = resolve(root, opts.out ?? 'bootstrap-runtime.js');
+if (opts.check) {
+  const committed = readFileSync(outPath, 'utf8');
+  if (committed !== generated.runtime) {
+    console.error(`bootstrap drift: ${opts.out ?? 'bootstrap-runtime.js'} differs from the generated text (run scripts/extract_bootstrap.mjs)`);
+    process.exit(1);
+  }
+  console.log(`${opts.out ?? 'bootstrap-runtime.js'} matches the generator output`);
+} else if (opts.out || !opts['emit-widget']) {
+  writeFileSync(outPath, generated.runtime);
+  console.log(`wrote ${opts.out ?? 'bootstrap-runtime.js'} (${generated.runtime.length} bytes)`);
+}
+if (opts['emit-widget']) {
+  writeFileSync(opts['emit-widget'], generated.widget);
   console.log(`wrote widget half (${generated.widget.length} bytes)`);
 }
