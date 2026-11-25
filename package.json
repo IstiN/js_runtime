@@ -5,14 +5,16 @@
   "description": "Engine-agnostic JavaScript runtime core for jsr widgets",
   "scripts": {
     "test": "node --test",
-    "coverage": "npx c8 --reporter=json --reporter=text --include=bootstrap-runtime.js --include=libs/three/three-shim.js node --test",
-    "crap": "npx crap4js bootstrap-runtime.js libs/three/three-shim.js --coverage coverage/coverage-final.json --threshold 8.0",
+    "coverage": "npx c8 --reporter=json --reporter=text --include=bootstrap-runtime.js node --test",
+    "crap": "npx crap4js bootstrap-runtime.js --coverage coverage/coverage-final.json --threshold 8.0",
     "engines:host": "bash tool/build_all.sh host"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
+    "acorn": "^8.19.0",
+    "acorn-walk": "^8.3.5",
     "c8": "^12.0.0",
     "crap4js": "github:vabhzw17eg2qu4m9-bit/crap4js#v0.34.0",
     "esbuild": "0.25.5",

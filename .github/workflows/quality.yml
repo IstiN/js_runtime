@@ -16,6 +16,14 @@ jobs:
       - run: ./scripts/fetch-conformance.sh
       - run: npm ci
       - run: npm test
+      - name: Coverage (c8)
+        run: npm run coverage
+      - name: Coverage file present
+        run: test -s coverage/coverage-final.json
+      - name: CRAP gate (threshold 8.0)
+        run: npm run crap
+      - name: Bootstrap drift check
+        run: node scripts/extract_bootstrap.mjs --check
 
   engines:
     runs-on: ubuntu-latest
