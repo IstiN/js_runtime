@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: bash tool/build_all.sh host
-      - run: node --test test/engine/
+      - run: node --test 'test/engine/**/*.test.mjs'
 
   android:
     runs-on: ubuntu-latest
