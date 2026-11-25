@@ -45,11 +45,23 @@ Android targets need an NDK (`$ANDROID_NDK_HOME` or `--ndk <dir>`; CI installs
 `ndk;27.2.12479018`). `npm test` builds the host backend itself when
 `build/host/qjs_harness` is missing.
 
+## three.js
+
+`libs/three/` vendors the three.js r186 bundle (`three.min.js`,
+reproducible via `node libs/three/build.mjs --source <checkout> --verify`)
+plus `three-shim.js` (a `document.createElement('canvas')` stub that exists
+only when `document` is undefined and defers to the host's
+`__jsrCreateCanvas`). The host preloads the bundle before the bootstrap; see
+`libs/three/docs/THREE.md`. Parity (Chromium == QuickJS) runs with
+`JSR_REQUIRE_BROWSER=1 node --test test/three/*.test.js`.
+
 ## Docs
 
 - `docs/PROTOCOL.md` — messaging channel specification (extracted from the
   Flutter reference implementation).
 - `docs/ENGINE_ADAPTER.md` — the engine adapter interface.
+- `docs/BOOTSTRAP.md` — the runtime bootstrap half, its generator and the
+  CRAP overrides.
 
 ## Running tests
 

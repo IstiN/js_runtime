@@ -14,13 +14,23 @@ Wire facts per channel are in `docs/PROTOCOL.md`.
 
 ```
 node scripts/extract_bootstrap.mjs                     # write bootstrap-runtime.js
-node scripts/extract_bootstrap.mjs --emit-widget <p>   # write the widget half to <p>
+node scripts/extract_bootstrap.mjs --out <path>        # write the runtime half to <path>
+node scripts/extract_bootstrap.mjs --emit-widget <p>   # write ONLY the widget half to <p>
 node scripts/extract_bootstrap.mjs --check             # exit 1 on drift with the committed file
+node scripts/extract_bootstrap.mjs --reference <dart> --pin <sha> [--out <p>|--emit-widget <p>]
 ```
 
 - Reads the pinned reference through `conformance.lock` (run
   `scripts/fetch-conformance.sh` first; the generator and `--check` need
-  `.conformance/flutter_js_widget_runtime/...` to exist).
+  `.conformance/flutter_js_widget_runtime/...` to exist) — unless BOTH
+  `--reference` and `--pin` are given: then `conformance.lock` and
+  `.conformance/` are never read, so a consumer repository runs the generator
+  against its own pin. `--pin` is the sha printed in the provenance line.
+- Write rule: `--emit-widget <path>` alone writes ONLY the widget half; the
+  runtime half is written when `--emit-widget` is absent or `--out` is given.
+  `--check` compares the runtime half (default `bootstrap-runtime.js`, or
+  `--out`) with the regenerated text. `--help` prints the full contract.
+  `test/extract.test.js` proves both portable modes byte for byte.
 - **Split rule** (plan 1.2): the runtime half is the explicit RUNTIME set —
   the top-level statements `__cbs`, `__iv_cbs`, `__raf_cbs`, `__jsrResolve`,
   `__jsrInterval`, `__jsrRaf`, `__jsrWarmResolve`, `__tag`, `__send`,

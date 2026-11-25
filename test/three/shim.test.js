@@ -11,14 +11,14 @@ const SHIM = readFileSync(path.resolve(HERE, '../../libs/three/three-shim.js'), 
 test('shim leaves an existing document untouched', () => {
   const original = { createElement: () => ({ real: true }) };
   const sandbox = { document: original };
-  vm.runInNewContext(SHIM, sandbox);
+  vm.runInNewContext(SHIM, sandbox, { filename: path.resolve(HERE, "../../libs/three/three-shim.js") });
   assert.equal(sandbox.document, original);
   assert.deepEqual(sandbox.document.createElement('canvas'), { real: true });
 });
 
 test('shim throws the named error without a host canvas', () => {
   const sandbox = {};
-  vm.runInNewContext(SHIM, sandbox);
+  vm.runInNewContext(SHIM, sandbox, { filename: path.resolve(HERE, "../../libs/three/three-shim.js") });
   const canvas = sandbox.document.createElement('canvas');
   assert.throws(() => canvas.getContext('2d'),
     /three\.unsupported: canvas backend not available/);
@@ -30,7 +30,7 @@ test('shim throws the named error without a host canvas', () => {
 
 test('shim routes getContext to the registered host canvas', () => {
   const sandbox = {};
-  vm.runInNewContext(SHIM, sandbox);
+  vm.runInNewContext(SHIM, sandbox, { filename: path.resolve(HERE, "../../libs/three/three-shim.js") });
   const created = [];
   sandbox.__jsrCreateCanvas = (type) => {
     created.push(type);
