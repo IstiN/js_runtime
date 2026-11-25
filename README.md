@@ -34,3 +34,21 @@ Contract sibling: [js_widget_runtime](https://github.com/IstiN/js_widget_runtime
 
 - `docs/PROTOCOL.md` — messaging channel specification (extracted from the
   Flutter reference implementation).
+
+## Running tests
+
+Requires Node >= 20.
+
+```bash
+npm ci
+npm test
+```
+
+## Quality gate
+
+CRAP-4 gate (threshold 8.0) plus coverage, computed on first-party source:
+
+```bash
+npm run coverage   # c8: coverage/coverage-final.json + text summary
+npm run crap       # crap4js against the coverage file
+```
