@@ -1,0 +1,9 @@
+QuickJS
+release: 2024-01-13
+source: https://github.com/bellard/quickjs (mirror of https://bellard.org/quickjs/)
+source artifact: https://bellard.org/quickjs/quickjs-2024-01-13.tar.xz
+source sha256: 3c4bf8f895bfa54beb486c8d1218112771ecfc5ac3be1036851ef41568212e03
+upstream commit: none published for the 2024-01-13 release (the official git server
+  serves no tag for it); the tarball above is the pinned source artifact.
+vendored from: IstiN/android_js_widget_runtime@30caf5acb8764cdc367bb4ecb83cd6acbff5ce10:app/src/main/cpp/quickjs
+build define: CONFIG_VERSION="2024-01-13"
