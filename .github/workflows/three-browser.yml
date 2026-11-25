@@ -24,4 +24,6 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Three tests
-        run: JSR_REQUIRE_BROWSER=1 node --test test/three/
+        # Node 22 treats a bare directory argument as a module; let the
+        # shell expand the test files.
+        run: JSR_REQUIRE_BROWSER=1 node --test test/three/*.test.js
