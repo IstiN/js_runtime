@@ -20,6 +20,8 @@ engine backend plugs in without widget-code changes. Backends:
 | `setMessageCallback((channel, payload) -> void)` | Installs the JS global `sendMessage(channel, payload)`. Every call forwards `(channel, payload)` to the host callback; the return value is ignored. |
 | `executePendingJobs()` | Drains pending jobs until none is left. A no-op on engines that drain by themselves (JavaScriptCore, Web Worker). |
 
+When the host evaluates a dispatch fragment (`callEvent` and the other helpers), every interpolated value — the `actionId` and the `payloadJson` — must be JSON-quoted into the fragment (`jsr._handler("inc", {"delta":1})`), never string-interpolated raw: an unquoted identifier throws a ReferenceError inside the event wrapper's try/catch, the wrapper swallows it, and the tap silently does nothing (device-verified in the Android POC).
+
 ## Host-to-JS helpers
 
 | Helper | JS global it invokes |
@@ -39,7 +41,7 @@ engine backend plugs in without widget-code changes. Backends:
 | `dispose` | `nativeDispose`: `JS_FreeContext`, `JS_FreeRuntime`, release of the JNI global ref | releasing the `JSContext` | `worker.terminate()` |
 | `setMessageCallback` | C function `js_sendMessage` is registered as the global `sendMessage`; it forwards to Kotlin `onJsMessage(channel, payload)` over JNI | `context.setObject(bridge, "sendMessage")` | the worker `sendMessage` posts `'__jsr__' + JSON.stringify({channel, payload})` to the main thread |
 | `executePendingJobs` | the `JS_ExecutePendingJob(rt, &pctx)` drain after each eval | no-op (JavaScriptCore drains by itself) | no-op (the worker drains by itself) |
-| `callEvent` | `nativeCallEvent`: evals the `jsr._handler(actionId, payload)` wrapper with source `<event>` and drains | `evaluateScript` of the same wrapper on the `JSContext` | `__jsr_call_event` control message; the worker sends `__jsr_event_done` after the handler settles |
+| `callEvent` | `nativeCallEvent`: evals the `jsr._handler(actionId, payload)` wrapper with source `<event>` and drains; `actionId` and `payload` are JSON-quoted into the fragment — interpolated raw, an unquoted `actionId` throws a ReferenceError the wrapper swallows and the event does nothing | `evaluateScript` of the same wrapper on the `JSContext` | `__jsr_call_event` control message; the worker sends `__jsr_event_done` after the handler settles |
 | `resolveCallback` / `intervalTick` / `rafTick` / `hostEvent` | Kotlin `eval`s the matching `__jsrResolve` / `__jsrInterval` / `__jsrRaf` global (timers are scheduled by `JsWidgetRuntime.kt` on `Handler`/`Choreographer`) | `evaluateScript` of the same globals on the main run loop | `__jsr_resolve` / `__jsr_interval_tick` / `__jsr_raf_tick` / `__jsr_host_event` control messages; the main thread drives timers and animation frames |
 
 The react repository implements the same interface later with a `Worker`

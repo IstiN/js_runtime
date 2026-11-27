@@ -14,9 +14,9 @@ Contract sibling: [js_widget_runtime](https://github.com/IstiN/js_widget_runtime
   JavaScriptCore (iOS/macOS), Web Worker (browser). One messaging contract
   above all of them.
 - **Messaging protocol**: the `sendMessage(channel, payloadJson)` bridge and
-  the full `__jsr_*` channel list (17 channels: render, setTitle, log,
-  timers, rAF, fetch, exec, hostCall, storage, secrets, loadAsset,
-  exportState, eventDone) — payload JSON shapes, direction, response contract.
+  the full `__jsr_*` channel list (21 channels: 17 core + 4 extended —
+  openUrl, capture, hostCallBinary, scene3d; see `docs/PROTOCOL.md` §5) —
+  payload JSON shapes, direction, response contract.
 - **Runtime bootstrap** (JS side): `console`, `setTimeout/setInterval`,
   `requestAnimationFrame`, `fetchJson`, `exec`, `storage`, `secrets`,
   `loadAsset`, `hostCall`, `exportState`.
