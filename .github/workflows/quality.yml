@@ -1,0 +1,65 @@
+name: Quality
+
+on: [push, pull_request]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build host engine backend
+        run: bash tool/build_all.sh host
+      - run: ./scripts/fetch-conformance.sh
+      - run: npm ci
+      - run: npm test
+      - name: Coverage (c8)
+        run: npm run coverage
+      - name: Coverage file present
+        run: test -s coverage/coverage-final.json
+      - name: CRAP gate (threshold 8.0)
+        run: npm run crap
+      - name: Bootstrap drift check
+        run: node scripts/extract_bootstrap.mjs --check
+
+  engines:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build host engine backend
+        run: bash tool/build_all.sh host
+      - run: node --test 'test/engine/**/*.test.js'
+      - name: Install NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018"
+      - name: Build Android ABIs
+        run: ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018" bash tool/build_all.sh armeabi-v7a arm64-v8a x86_64
+
+  three-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build host engine backend
+        run: bash tool/build_all.sh host
+      - name: Clone pinned three.js
+        run: |
+          THREE_COMMIT=$(python3 -c "import json; print(json.load(open('libs/three/source-pin.json'))['commit'])")
+          git clone --filter=blob:none --no-checkout https://github.com/mrdoob/three.js.git /tmp/jsr-three-r186
+          git -C /tmp/jsr-three-r186 checkout "$THREE_COMMIT"
+      - name: Verify committed bundle against pinned rebuild
+        run: node libs/three/build.mjs --source /tmp/jsr-three-r186 --verify
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Three tests
+        # Node 22 treats a bare directory argument as a module; let the
+        # shell expand the test files.
+        run: JSR_REQUIRE_BROWSER=1 node --test test/three/*.test.js
